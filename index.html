@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Agrisale test</title>
+	<link rel="stylesheet" type="text/css" href="bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css">
+	<script type="text/javascript" src="jquery-3.6.0.min.js"></script>
+	<script type="text/javascript" src="jquery.dataTables.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.js"></script>
+	<style type="text/css">
+		a {
+			text-decoration: none;
+		}
+		p {
+			margin: 0;
+		}
+		td {
+			vertical-align: middle;
+		}
+		.table>:not(caption)>*>* {
+			border-color: #dadada;
+		}
+		.btn-success {
+			background-color: #5db75d;
+			border: 1px solid #5db75d;
+		}
+		.btn-success:hover {
+			background-color: white;
+			color: #5db75d;
+		}
+		.form-check-input {
+			cursor: pointer;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1 class="text-success mt-5">Тестовое задание Agrisale</h1>
+		<p class="text-grey">Полученная информация из api выводится в консоль</p>
+		<button class="btn btn-primary my-4" onclick="showAllSelected()">Показать выбранные (<b id="checkedPositions">0</b>)</button>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>Добавить в запрос</th>
+					<th>Продавец</th>
+					<th>Регион</th>
+					<th>Рейтинг</th>
+					<th>Опция</th>
+					<th>Кол-во</th>
+					<th>Базовая цена</th>
+					<th>Выбрать</th>
+				</tr>
+			</thead>
+			<tbody id="tbody">
+
+			</tbody>
+		</table>
+	</div>
+	<script type="text/javascript">
+		function getData() {
+			fetch('https://' + window.location.hostname + '/api/api.php?method=getTableData').then((result)=>{
+				if(result.status == 200) {
+					return result.json();
+				}
+			}).then((data)=>{
+				console.log(data);
+				generateTable(data);
+			})
+		}
+		function generateTable(data) {
+			for(let i in data) {
+				let option;
+				switch(data[i].option) {
+					case 0:
+						option = 'Стандарт';
+					break;
+					case 1:
+						option = 'Круйзер';
+					break;
+					case 2:
+						option = 'Опция 3';
+					break;
+				}
+				let elem = document.createElement('tr');
+				elem.innerHTML = '' +
+				'<td><input class="form-check-input" type="checkbox" onclick="handleCheckbox(this)" id="checkbox-' + data[i].sellerID + '"></td>' + 
+				'<td><a href="#seller' + data[i].sellerID + '">' + data[i].seller + '</a></td>' + 
+				'<td><p>' + data[i].region + '</p></td>' + 
+				'<td><p class="d-flex align-items-center"><img src="star.svg" style="height: 1rem;margin-right: 0.25rem;">' + data[i].rating + '</p></td>' + 
+				'<td><p>' + option + '</p></td>' + 
+				'<td><p>' + data[i].count + '</p></td>' + 
+				'<td><p>' + data[i].price + ' ' + data[i].currency + '</p></td>' + 
+				'<td><button onclick="handleClick(' + data[i].sellerID + ')" class="btn btn-success py-2 px-4">Запросить КП</button></td>';
+
+				document.getElementById('tbody').appendChild(elem);
+			}
+			$('.table').DataTable();
+		}
+		let checkedPositions = [];
+		function handleCheckbox(box) {
+			let arr = box.id.split('-');
+			let id = parseInt(arr[1]);
+			if(box.checked) {
+				checkedPositions.push(id);
+			} else {
+				for(let i in checkedPositions) {
+					if(checkedPositions[i] == id) {
+						checkedPositions.splice(i,1);
+						break;
+					}
+				}
+			}
+			$('#checkedPositions').html(checkedPositions.length);
+		}
+		function handleClick(sellerID) {
+			$.alert({
+				title: 'Заголовок модального окна',
+				draggable: false,
+				type: 'green',
+				content: 'продавец с ID ' + sellerID + '<br>' +
+				'<div class="d-flex justify-content-center p-3">' +
+					'<div class="btn-group">' +
+						'<a href="#" class="btn btn-primary" aria-current="page" onclick="input(-1)">-</a>' +
+						'<input style="width:5rem !important;text-align: center !important; " class="input count" type="text" value="100">' + 
+						'<a href="#" class="btn btn-primary" onclick="input(1)">+</a>' + 
+					'</div>' + 
+				'</div>'
+			});
+		}
+		function input(inp) {
+			let currentVal = parseInt($('.input.count').val());
+			currentVal += parseInt(inp);
+			$('.input.count').val(currentVal);
+		}
+		function showAllSelected() {
+			if(checkedPositions.length == 0) {
+				$.alert({
+					title: 'Заголовок модального окна',
+					draggable: false,
+					type: 'red',
+					content: 'Не выбрано ни одной позиции',
+				});
+			} else {
+				$.alert({
+					title: 'Заголовок модального окна',
+					draggable: false,
+					type: 'green',
+					content: 'Выбраны продавцы с ID: <br>' + checkedPositions,
+				});
+			}
+		}
+
+		getData();
+
+	</script>
+</body>
+</html>
